@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {RUNES,OGHAM,parse,geometry,svgMarkup,latinize} from '../engine.js';
+test('complete alphabets and corrected Unicode',()=>{assert.equal(Object.keys(RUNES).length,24);assert.equal(Object.keys(OGHAM).length,20);assert.equal(RUNES.F.glyph,'ᚠ');assert.equal(RUNES.A.glyph,'ᚨ');});
+test('ALTAI preserves repetition and Isa',()=>assert.deepEqual(parse('ALTAI').tokens.map(t=>t.key),['A','L','T','A','I']));
+test('digraphs and explicit approximations',()=>{assert.deepEqual(parse('THING').tokens.map(t=>t.key),['TH','I','NG']);assert.equal(parse('CVX').warnings.length,3);assert.equal(parse('🙂').tokens.length,0);});
+test('Mongolian editable transliteration',()=>assert.equal(latinize('Алтай Өүлэн'),'ALTAI OULEN'));
+test('Ogham groups and bottom upward ordering',()=>{const t=parse('BLMA','ogham').tokens;assert.deepEqual(t.map(x=>x.group),[0,0,2,3]);const g=geometry(t,'ogham');assert.ok(g.lines[1][1]>g.lines.at(-1)[1]);});
+test('all strokes stay finite inside canvas for all modes',()=>{for(const mode of ['bind','sequence','ogham']){const t=parse('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.repeat(2),mode).tokens;const g=geometry(t,mode);for(const s of g.lines)s.forEach((v,i)=>{assert.ok(Number.isFinite(v));assert.ok(v>=0&&v<=(i%2?g.height:g.width));});assert.equal(t.length,32);}});
+test('exports deterministic, safe and background optional',()=>{const t=parse('BAT').tokens;assert.equal(svgMarkup(t),svgMarkup(t));assert.ok(!svgMarkup(t).includes('<rect'));assert.ok(svgMarkup(t,'bind','#d4af37',3,true).includes('<rect'));assert.ok(!svgMarkup(t,'bind','" onload="alert(1)').includes('onload'));assert.equal(geometry([]).lines.length,0);});
